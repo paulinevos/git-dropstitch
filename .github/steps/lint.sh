@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
-cargo add cargo-machete
+cargo install cargo-machete
 
-cargo fmt
+echo "Running \`cargo fmt\`"
+cargo fmt --check
+
+echo "Running \`cargo clippy\`"
 cargo clippy
+
+echo "Running \`cargo machete\`"
 cargo machete

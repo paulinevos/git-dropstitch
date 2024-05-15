@@ -1,7 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
 
-use cucumber::codegen::IntoWorldResult;
 use cucumber::{given, then, when, World as _};
 use fs_extra::dir::CopyOptions;
 
@@ -38,8 +37,6 @@ const MOCK_REPO_PATH: &str = "tests/fixtures/mock-repo/";
 // TODO: remove this. Doesn't make sense to run async as it's fucking up mock repo state
 #[tokio::main]
 async fn main() {
-    let w = World::new();
-
     World::cucumber()
         .before(|_feature, _rule, _scenario, world| {
             Box::pin(async move {

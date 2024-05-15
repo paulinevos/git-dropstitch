@@ -10,14 +10,14 @@ pub mod git {
     use std::path::PathBuf;
     use std::process::{Command, Stdio};
 
-    pub fn run_command_with_output<'a>(
+    pub fn run_command_with_output(
         args: &[&str],
         path: Option<&PathBuf>,
     ) -> anyhow::Result<String> {
         let mut child = Command::new("git");
 
         if let Some(path) = path {
-            child.args(&["-C", path.to_str().context("Failed parsing repo path")?]);
+            child.args(["-C", path.to_str().context("Failed parsing repo path")?]);
         }
 
         for arg in args {
@@ -25,7 +25,7 @@ pub mod git {
         }
 
         let output = child.stdout(Stdio::piped()).spawn()?.wait_with_output()?;
-        let output = std::str::from_utf8(&*output.stdout)?;
+        let output = std::str::from_utf8(&output.stdout)?;
 
         Ok(String::from(output))
     }

@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::path::{PathBuf};
-use std::str::FromStr;
+use std::path::PathBuf;
 
 use anyhow::Context;
 use regex::Regex;
@@ -32,9 +31,9 @@ impl Dropstitch {
 #[derive(Debug)]
 struct Ref {
     from_hash: String,
-    to_hash: String,
-    /// The Git operation to perform the action onto, i.e. merge or rebase
-    operation: Operation,
+    // to_hash: String,
+    // /// The Git operation to perform the action onto, i.e. merge or rebase
+    // operation: Operation,
 }
 
 #[derive(EnumString, Debug, PartialEq)]
@@ -58,14 +57,14 @@ impl Ref {
                     .context("missing 'from' hash")?
                     .as_str()
                     .to_string(),
-                to_hash: caps
-                    .name("to_hash")
-                    .context("missing 'to' hash")?
-                    .as_str()
-                    .to_string(),
-                operation: Operation::from_str(
-                    caps.name("op").context("missing operation")?.as_str(),
-                )?,
+                // to_hash: caps
+                //     .name("to_hash")
+                //     .context("missing 'to' hash")?
+                //     .as_str()
+                //     .to_string(),
+                // operation: Operation::from_str(
+                //     caps.name("op").context("missing operation")?.as_str(),
+                // )?,
             }));
         }
 
@@ -93,14 +92,10 @@ impl Reflog {
         let file = File::open(reflog_path)?;
         let lines: anyhow::Result<Vec<Option<Ref>>> = BufReader::new(file)
             .lines()
-            .map(|l| -> anyhow::Result<Option<Ref>> { Ok(Ref::from_line(l?)?) })
+            .map(|l| -> anyhow::Result<Option<Ref>> { Ref::from_line(l?) })
             .collect();
 
-        let refs: Vec<Ref> = lines?
-            .into_iter()
-            .filter(|l| l.is_some())
-            .map(|l| l.unwrap())
-            .collect::<Vec<Ref>>();
+        let refs: Vec<Ref> = lines?.into_iter().flatten().collect::<Vec<Ref>>();
 
         Ok(Self { refs, repo })
     }
@@ -146,7 +141,7 @@ impl Reflog {
         let mut it = re.captures_iter(branch_output.as_str());
         let caps = it.next().context("regex capture failed")?;
 
-        if let Some(_) = caps.name("detached") {
+        if caps.name("detached").is_some() {
             return Err(DropstitchError::DetachedHead);
         }
 
