@@ -1,3 +1,4 @@
+workspace = { members = ["lib"] }
 [package]
 name = "git-dropstitch"
 version = "0.1.0"
@@ -6,5 +7,21 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = "4.5.4"
-ratatui = "0.26.2"
+clap = { version = "4.5.4", features = ["derive"] }
+gds_lib = { path = "lib" }
+uuid = { version = "1.8.0", features = ["v4"] }
+regex = "1.10.4"
+
+[[bin]]
+name = "git_dropstitch"
+path = "src/main.rs"
+
+[[test]]
+name = "bdd"
+harness = false  # allows Cucumber to print output instead of libtest
+
+[dev-dependencies]
+fs_extra = "1.3.0"
+tokio = { version = "1.37.0", features = ["rt", "rt-multi-thread", "macros"] }
+cucumber = "0.21.0"
+anyhow = "1.0.82"
