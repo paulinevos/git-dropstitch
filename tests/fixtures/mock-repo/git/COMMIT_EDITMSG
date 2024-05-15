@@ -1,0 +1,12 @@
+bar
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# Author:    Pauline Vos <pauline@usabilla.com>
+# Date:      Sat Aug 13 16:40:20 2016 +0200
+#
+# On branch amend-amend
+# Changes to be committed:
+#	modified:   PokeMongo.php
+#
