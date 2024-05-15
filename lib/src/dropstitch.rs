@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use std::str::FromStr;
 
 use anyhow::Context;
