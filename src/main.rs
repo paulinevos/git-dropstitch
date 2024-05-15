@@ -2,8 +2,8 @@ use std::process::exit;
 
 use clap::Parser;
 
-use gds_lib::Cli;
 use gds_lib::dropstitch::Dropstitch;
+use gds_lib::Cli;
 
 fn main() {
     let cli = Cli::parse();

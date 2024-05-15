@@ -7,12 +7,13 @@ use anyhow::Context;
 use regex::Regex;
 use strum::EnumString;
 
-use crate::{Action, Cli, Command};
 use crate::error::DropstitchError;
 use crate::git::run_command_with_output;
+use crate::{Action, Cli, Command};
 
 const HEAD_REGEX: &str = r"^\* ((?<detached>\(HEAD detached)|(?<operation>\(no branch, (bisect|rebasing))|(?<branch>.+))";
-const REF_REGEX: &str = r"^(?<from_hash>[[:alnum:]]{40}) (?<to_hash>[[:alnum:]]{40}) .+\((?<op>amend)\): .+$";
+const REF_REGEX: &str =
+    r"^(?<from_hash>[[:alnum:]]{40}) (?<to_hash>[[:alnum:]]{40}) .+\((?<op>amend)\): .+$";
 
 pub struct Dropstitch;
 
@@ -23,7 +24,7 @@ impl Dropstitch {
         match &cli.command {
             Command::Z => reflog.undo_previous(),
             Command::Y => reflog.redo_next(),
-            Command::Ls => Ok(println!("Printing list"))
+            Command::Ls => Ok(println!("Printing list")),
         }
     }
 }
@@ -33,16 +34,16 @@ struct Ref {
     from_hash: String,
     to_hash: String,
     /// The Git operation to perform the action onto, i.e. merge or rebase
-    operation: Operation
+    operation: Operation,
 }
 
 #[derive(EnumString, Debug, PartialEq)]
 #[strum(serialize_all = "snake_case")]
 enum Operation {
     Amend,
-//     Merge,
-//     Reset { hard: bool },
-//     Rebase {interactive: bool, onto: String},
+    //     Merge,
+    //     Reset { hard: bool },
+    //     Rebase {interactive: bool, onto: String},
 }
 
 impl Ref {
@@ -51,13 +52,21 @@ impl Ref {
 
         let mut it = re.captures_iter(l.as_str());
         if let Some(caps) = it.next() {
-            return Ok(
-                Some(Ref {
-                    from_hash: caps.name("from_hash").context("missing 'from' hash")?.as_str().to_string(),
-                    to_hash: caps.name("to_hash").context("missing 'to' hash")?.as_str().to_string(),
-                    operation: Operation::from_str(caps.name("op").context("missing operation")?.as_str())?,
-                })
-            )
+            return Ok(Some(Ref {
+                from_hash: caps
+                    .name("from_hash")
+                    .context("missing 'from' hash")?
+                    .as_str()
+                    .to_string(),
+                to_hash: caps
+                    .name("to_hash")
+                    .context("missing 'to' hash")?
+                    .as_str()
+                    .to_string(),
+                operation: Operation::from_str(
+                    caps.name("op").context("missing operation")?.as_str(),
+                )?,
+            }));
         }
 
         Ok(None)
@@ -66,26 +75,25 @@ impl Ref {
 
 struct Reflog {
     refs: Vec<Ref>,
-    repo: PathBuf
+    repo: PathBuf,
 }
 
 impl Reflog {
     pub fn init(repo: Option<PathBuf>) -> Result<Reflog, DropstitchError> {
-        let repo = if let Some(repo) = repo { repo } else { PathBuf::new() };
+        let repo = if let Some(repo) = repo {
+            repo
+        } else {
+            PathBuf::new()
+        };
 
         let branch = Self::parse_branch(&repo)?;
 
-        let reflog_path = repo
-            .join(".git")
-            .join("logs/refs/heads")
-            .join(branch);
+        let reflog_path = repo.join(".git").join("logs/refs/heads").join(branch);
 
         let file = File::open(reflog_path)?;
         let lines: anyhow::Result<Vec<Option<Ref>>> = BufReader::new(file)
             .lines()
-            .map(|l| -> anyhow::Result<Option<Ref>> {
-                Ok(Ref::from_line(l?)?)
-            })
+            .map(|l| -> anyhow::Result<Option<Ref>> { Ok(Ref::from_line(l?)?) })
             .collect();
 
         let refs: Vec<Ref> = lines?
@@ -94,7 +102,7 @@ impl Reflog {
             .map(|l| l.unwrap())
             .collect::<Vec<Ref>>();
 
-        Ok(Self{refs, repo})
+        Ok(Self { refs, repo })
     }
     pub fn undo_previous(&self) -> Result<(), DropstitchError> {
         let prev = self.refs.last();
@@ -110,12 +118,13 @@ impl Reflog {
         Ok(())
     }
 
-    fn reset_to_ref(&self, action: Action, ref_option: &Option<&Ref>) -> Result<(), DropstitchError> {
+    fn reset_to_ref(
+        &self,
+        action: Action,
+        ref_option: &Option<&Ref>,
+    ) -> Result<(), DropstitchError> {
         if let Some(r) = ref_option {
-            run_command_with_output(
-                &["reset", "--hard", r.from_hash.as_str()],
-                Some(&self.repo)
-            )?;
+            run_command_with_output(&["reset", "--hard", r.from_hash.as_str()], Some(&self.repo))?;
             Ok(())
         } else {
             Err(DropstitchError::NothingTo(action))
@@ -142,7 +151,9 @@ impl Reflog {
         }
 
         if let Some(op) = caps.name("operation") {
-            return Err(DropstitchError::OperationInProgress(String::from(op.as_str())));
+            return Err(DropstitchError::OperationInProgress(String::from(
+                op.as_str(),
+            )));
         }
 
         if let Some(branch) = caps.name("branch") {

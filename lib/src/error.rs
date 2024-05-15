@@ -1,5 +1,3 @@
-
-
 use cucumber::codegen::anyhow;
 use thiserror::Error;
 
@@ -18,7 +16,7 @@ pub enum DropstitchError {
     #[error(transparent)]
     IoError(#[from] std::io::Error),
     #[error(transparent)]
-    Other(#[from] anyhow::Error)
+    Other(#[from] anyhow::Error),
 }
 
 impl DropstitchError {
@@ -28,7 +26,7 @@ impl DropstitchError {
             DropstitchError::NothingTo(_) => 2,
             DropstitchError::DetachedHead => 2,
             DropstitchError::OperationInProgress(_) => 2,
-            _ => 1
+            _ => 1,
         }
     }
 
@@ -38,28 +36,36 @@ impl DropstitchError {
             DropstitchError::NothingTo(_) => println!("{}", self),
             DropstitchError::DetachedHead => {
                 println!("You appear to be in a detached HEAD state.\n");
-                println!("Dropstitch must be run from the \"end\" (HEAD) of a branch.\n
-                Try checking out the branch with `git switch [branch name]`");
+                println!(
+                    "Dropstitch must be run from the \"end\" (HEAD) of a branch.\n
+                Try checking out the branch with `git switch [branch name]`"
+                );
             }
             DropstitchError::OperationInProgress(op) => {
                 // ToDo: make a nice enum for the ops
                 if op == "rebasing" {
                     println!("You appear to be in an active rebase.\n");
-                    println!("Dropstitch must be run from the \"end\" (HEAD) of a branch.\n
-                    Please finish rebasing, or leave it behind with `git rebase --quit`");
+                    println!(
+                        "Dropstitch must be run from the \"end\" (HEAD) of a branch.\n
+                    Please finish rebasing, or leave it behind with `git rebase --quit`"
+                    );
                 } else if op == "bisect" {
                     println!("You appear to be in an active bisect.\n");
-                    println!("Dropstitch must be run from the \"end\" (HEAD) of a branch.\n
-                    Please finish your bisect, or leave it behind with `git bisect --reset`");
+                    println!(
+                        "Dropstitch must be run from the \"end\" (HEAD) of a branch.\n
+                    Please finish your bisect, or leave it behind with `git bisect --reset`"
+                    );
                 } else {
                     println!("You appear to be in some sort of active Git operation.\n");
-                    println!("Dropstitch must be run from the \"end\" (HEAD) of a branch.\n
-                    Please finish the operation to return to your head.");
+                    println!(
+                        "Dropstitch must be run from the \"end\" (HEAD) of a branch.\n
+                    Please finish the operation to return to your head."
+                    );
                 }
             }
             // ToDo: not be an asshole and print a more useful error
             // ToDo: Also run in --verbose mode to get internal error
-            e => println!("An internal error occurred. My bad! {}", e)
+            e => println!("An internal error occurred. My bad! {}", e),
         }
     }
 }
