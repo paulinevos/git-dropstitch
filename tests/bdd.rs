@@ -1,9 +1,7 @@
 use std::fs;
-use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::PathBuf;
 
 use cucumber::codegen::IntoWorldResult;
-use cucumber::gherkin::Scenario;
 use cucumber::{given, then, when, World as _};
 use fs_extra::dir::CopyOptions;
 
@@ -32,7 +30,7 @@ impl World {
     }
 
     fn run_command_with_output(&self, args: &[&str]) -> anyhow::Result<String> {
-        run_command_with_output(&args, Some(&self.path))
+        run_command_with_output(args, Some(&self.path))
     }
 }
 const MOCK_REPO_PATH: &str = "tests/fixtures/mock-repo/";
