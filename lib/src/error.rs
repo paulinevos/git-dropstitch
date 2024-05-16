@@ -1,7 +1,7 @@
 use cucumber::codegen::anyhow;
 use thiserror::Error;
 
-use crate::Action;
+use crate::dropstitch::Action;
 
 #[derive(Error, Debug)]
 pub enum DropstitchError {

@@ -56,23 +56,25 @@ async fn main() {
                     &options,
                 )
                 .unwrap();
+                fs::remove_dir_all(scenario_repo.join("git"))
+                    .expect("Failed to remove mock git directory");
             })
         })
         .after(|_feature, _rule, _scenario, _ev, world| {
             Box::pin(async {
                 fs::remove_dir_all(world.unwrap().path.clone())
-                    .expect("Failed to remove test repo");
+                    .expect("Failed to remove mock repo");
             })
         })
         .run("tests/features/undo.feature")
         .await;
 }
 
-#[given(expr = "the user amended the latest commit message from \"foo\" to {string}")]
-async fn amended_commit(w: &mut World, to: String) -> anyhow::Result<()> {
+#[given(expr = "the user amended the last commit message twice")]
+async fn amended_commit(w: &mut World) -> anyhow::Result<()> {
     let _ = w.run_command_with_output(&["checkout", "amend-amend"])?;
 
-    commit_message_is(w, to).await
+    commit_message_is(w, "baz".to_string()).await
 }
 
 #[when("they undo the last change")]
@@ -86,7 +88,19 @@ async fn commit_message_is(w: &mut World, msg: String) -> anyhow::Result<()> {
     let output = w.run_command_with_output(&["log", "--oneline"])?;
     let re = Regex::new(format!("^[a-z0-9]* {}\n", msg).as_str())?;
 
-    assert!(re.is_match(output.as_str()));
+    assert!(
+        re.is_match(output.as_str()),
+        r"Commit message
+---
+{}
+---
+does not match expected
+---
+{}
+---",
+        output,
+        msg
+    );
 
     Ok(())
 }

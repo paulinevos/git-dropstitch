@@ -1,4 +1,4 @@
-bar
+baz
 
 # Please enter the commit message for your changes. Lines starting
 # with '#' will be ignored, and an empty message aborts the commit.
@@ -9,4 +9,7 @@ bar
 # On branch amend-amend
 # Changes to be committed:
 #	modified:   PokeMongo.php
+#
+# Untracked files:
+#	git/
 #

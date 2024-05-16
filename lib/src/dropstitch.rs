@@ -1,14 +1,18 @@
-use std::fs::File;
+use std::fs::{create_dir_all, File, OpenOptions};
+use std::io::Write;
 use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use anyhow::Context;
 use regex::Regex;
-use strum::EnumString;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use strum::{Display, EnumString};
 
 use crate::error::DropstitchError;
 use crate::git::run_command_with_output;
-use crate::{Action, Cli, Command};
+use crate::{Cli, Command};
 
 const HEAD_REGEX: &str = r"^\* ((?<detached>\(HEAD detached)|(?<operation>\(no branch, (bisect|rebasing))|(?<branch>.+))";
 const REF_REGEX: &str =
@@ -28,16 +32,17 @@ impl Dropstitch {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 struct Ref {
     from_hash: String,
-    // to_hash: String,
-    // /// The Git operation to perform the action onto, i.e. merge or rebase
-    // operation: Operation,
+    to_hash: String,
+    /// The Git operation to perform the action onto, i.e. merge or rebase
+    operation: Operation,
 }
 
-#[derive(EnumString, Debug, PartialEq)]
+#[derive(EnumString, Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "lowercase")]
 enum Operation {
     Amend,
     //     Merge,
@@ -45,7 +50,7 @@ enum Operation {
     //     Rebase {interactive: bool, onto: String},
 }
 
-impl Ref {
+impl FromLine for Ref {
     fn from_line(l: String) -> anyhow::Result<Option<Self>> {
         let re = Regex::new(REF_REGEX)?;
 
@@ -57,14 +62,14 @@ impl Ref {
                     .context("missing 'from' hash")?
                     .as_str()
                     .to_string(),
-                // to_hash: caps
-                //     .name("to_hash")
-                //     .context("missing 'to' hash")?
-                //     .as_str()
-                //     .to_string(),
-                // operation: Operation::from_str(
-                //     caps.name("op").context("missing operation")?.as_str(),
-                // )?,
+                to_hash: caps
+                    .name("to_hash")
+                    .context("missing 'to' hash")?
+                    .as_str()
+                    .to_string(),
+                operation: Operation::from_str(
+                    caps.name("op").context("missing operation")?.as_str(),
+                )?,
             }));
         }
 
@@ -72,40 +77,108 @@ impl Ref {
     }
 }
 
+#[derive(EnumString, Display, Debug, Serialize, Deserialize, PartialEq)]
+#[strum(serialize_all = "lowercase")]
+pub enum Action {
+    Undo,
+    Redo,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+struct ActionPerformed {
+    action: Action,
+    reference: Ref,
+}
+
+impl FromLine for ActionPerformed {
+    fn from_line(s: String) -> anyhow::Result<Option<Self>> {
+        Ok(serde_json::from_str(s.as_str())?)
+    }
+}
+
 struct Reflog {
     refs: Vec<Ref>,
-    repo: PathBuf,
+    action_log: Vec<ActionPerformed>,
+    repo_path: PathBuf,
+    dropstitch_file: File,
+}
+
+trait FromLine {
+    fn from_line(s: String) -> anyhow::Result<Option<Self>>
+    where
+        Self: Sized;
 }
 
 impl Reflog {
-    pub fn init(repo: Option<PathBuf>) -> Result<Reflog, DropstitchError> {
-        let repo = if let Some(repo) = repo {
-            repo
+    pub fn init(repo_path: Option<PathBuf>) -> Result<Reflog, DropstitchError> {
+        let repo_path = if let Some(path) = repo_path {
+            path
         } else {
             PathBuf::new()
         };
 
-        let branch = Self::parse_branch(&repo)?;
+        let branch = Self::parse_branch(&repo_path)?;
+        let git_dir = repo_path.join(".git");
 
-        let reflog_path = repo.join(".git").join("logs/refs/heads").join(branch);
+        let dropstitch_path = git_dir.join(".dropstitch");
+        create_dir_all(&dropstitch_path)?;
 
-        let file = File::open(reflog_path)?;
-        let lines: anyhow::Result<Vec<Option<Ref>>> = BufReader::new(file)
+        let dropstitch_file = Self::dropstitch_file(dropstitch_path.join(&branch))?;
+
+        Ok(Self {
+            refs: Self::parse_refs(&git_dir, &branch)?,
+            action_log: Self::parse_actions(&dropstitch_file)?,
+            repo_path,
+            dropstitch_file,
+        })
+    }
+
+    fn parse_refs(git_dir: &Path, branch: &str) -> Result<Vec<Ref>, DropstitchError> {
+        let reflog_path = git_dir.join("logs/refs/heads").join(branch);
+        let reflog_file = File::open(reflog_path)?;
+
+        Ok(Self::parse_file_into(&reflog_file)?)
+    }
+
+    fn parse_actions(dropstitch_file: &File) -> Result<Vec<ActionPerformed>, DropstitchError> {
+        Ok(Self::parse_file_into(dropstitch_file)?)
+    }
+
+    // ToDo: make a version of this that stops reading lines when the first undo/redo is found (Iterator::take_while?)
+    fn parse_file_into<T: FromLine>(file: &File) -> anyhow::Result<Vec<T>> {
+        let lines: anyhow::Result<Vec<Option<T>>> = BufReader::new(file)
             .lines()
-            .map(|l| -> anyhow::Result<Option<Ref>> { Ref::from_line(l?) })
+            .map(|l| -> anyhow::Result<Option<T>> {
+                let l = l?;
+                T::from_line(l)
+            })
             .collect();
 
-        let refs: Vec<Ref> = lines?.into_iter().flatten().collect::<Vec<Ref>>();
-
-        Ok(Self { refs, repo })
+        Ok(lines?.into_iter().flatten().collect())
     }
+
+    fn dropstitch_file(dropstitch_path: PathBuf) -> Result<File, DropstitchError> {
+        Ok(OpenOptions::new()
+            .read(true)
+            .append(true)
+            .create(true)
+            .open(dropstitch_path)?)
+    }
+
+    fn get_prev(&self) -> Option<Ref> {
+        for r in self.refs.clone().iter().rev() {
+            if !self.action_log.contains(&ActionPerformed {
+                action: Action::Undo,
+                reference: r.clone(),
+            }) {
+                return Some(r.clone());
+            }
+        }
+        None
+    }
+
     pub fn undo_previous(&self) -> Result<(), DropstitchError> {
-        let prev = self.refs.last();
-
-        // Reset (if this fails, don't write to file)
-        // Write to dropstitch file
-
-        self.reset_to_ref(Action::Undo, &prev)
+        self.perform_action(Action::Undo, self.get_prev())
     }
 
     pub fn redo_next(&self) -> Result<(), DropstitchError> {
@@ -113,17 +186,27 @@ impl Reflog {
         Ok(())
     }
 
-    fn reset_to_ref(
+    fn perform_action(
         &self,
         action: Action,
-        ref_option: &Option<&Ref>,
+        ref_option: Option<Ref>,
     ) -> Result<(), DropstitchError> {
-        if let Some(r) = ref_option {
-            run_command_with_output(&["reset", "--hard", r.from_hash.as_str()], Some(&self.repo))?;
-            Ok(())
+        if let Some(reference) = ref_option {
+            run_command_with_output(
+                &["reset", "--hard", reference.from_hash.as_str()],
+                Some(&self.repo_path),
+            )?;
+
+            writeln!(
+                &self.dropstitch_file,
+                "{}",
+                json!(ActionPerformed { action, reference })
+            )?;
         } else {
-            Err(DropstitchError::NothingTo(action))
+            return Err(DropstitchError::NothingTo(action));
         }
+
+        Ok(())
     }
 
     fn parse_branch(repo: &PathBuf) -> Result<String, DropstitchError> {

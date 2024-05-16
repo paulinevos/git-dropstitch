@@ -1,6 +1,5 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
-use strum::{Display, EnumString};
 
 pub mod dropstitch;
 pub mod error;
@@ -29,13 +28,6 @@ pub mod git {
 
         Ok(String::from(output))
     }
-}
-
-#[derive(EnumString, Display, Debug)]
-#[strum(serialize_all = "lowercase")]
-pub enum Action {
-    Undo,
-    Redo,
 }
 
 #[derive(Parser, Debug)]
