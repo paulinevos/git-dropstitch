@@ -9,3 +9,8 @@ aa5396b16ae3692a1b31f8e52e598272cdd017ef 0ed265eb9460e93565441a808acf61526fdba3d
 74fa971750958b676d692bce8f1f4c0c52f7ef16 5f9282de3b226da8052e5b873fe8dc51580c2f62 Pauline Vos <pv@daedalean.ai> 1715863347 +0200	commit (amend): baz
 5f9282de3b226da8052e5b873fe8dc51580c2f62 63127975d457fe5e35603a3f0b38581122951608 Pauline Vos <pv@daedalean.ai> 1715863375 +0200	checkout: moving from master to amend-amend
 63127975d457fe5e35603a3f0b38581122951608 c204cb5a647dbf062f5ef5b34ab9672a91cceb50 Pauline Vos <pv@daedalean.ai> 1715863407 +0200	commit (amend): baz
+c204cb5a647dbf062f5ef5b34ab9672a91cceb50 5f9282de3b226da8052e5b873fe8dc51580c2f62 Pauline Vos <pv@daedalean.ai> 1717166234 +0200	checkout: moving from amend-amend to master
+5f9282de3b226da8052e5b873fe8dc51580c2f62 5f9282de3b226da8052e5b873fe8dc51580c2f62 Pauline Vos <pv@daedalean.ai> 1717166240 +0200	checkout: moving from master to amend-merge
+5f9282de3b226da8052e5b873fe8dc51580c2f62 a8817f51df3a9d9413c86aa7458f3f255df6bc9a Pauline Vos <pv@daedalean.ai> 1717166266 +0200	commit (amend): foo
+a8817f51df3a9d9413c86aa7458f3f255df6bc9a a8817f51df3a9d9413c86aa7458f3f255df6bc9a Pauline Vos <pv@daedalean.ai> 1717166304 +0200	reset: moving to HEAD
+a8817f51df3a9d9413c86aa7458f3f255df6bc9a 431ae3e7f8792ba5f5af5a06a371875c52475198 Pauline Vos <pv@daedalean.ai> 1717166321 +0200	merge amend-amend: Merge made by the 'ort' strategy.

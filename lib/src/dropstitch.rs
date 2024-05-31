@@ -14,9 +14,9 @@ use crate::error::DropstitchError;
 use crate::git::run_command_with_output;
 use crate::{Cli, Command};
 
-const HEAD_REGEX: &str = r"^\* ((?<detached>\(HEAD detached)|(?<operation>\(no branch, (bisect|rebasing))|(?<branch>.+))";
-const REF_REGEX: &str =
-    r"^(?<from_hash>[[:alnum:]]{40}) (?<to_hash>[[:alnum:]]{40}) .+\((?<op>amend)\): .+$";
+const HEAD_REGEX: &str =
+    r"\* ((?<detached>\(HEAD detached)|(?<operation>\(no branch, (bisect|rebasing))|(?<branch>.+))";
+const REF_REGEX: &str = r"^(?<from_hash>[[:alnum:]]{40}) (?<to_hash>[[:alnum:]]{40}) .+	(?:commit \()?(?<op>amend|merge)\)?.+$";
 
 pub struct Dropstitch;
 
@@ -45,7 +45,7 @@ struct Ref {
 #[serde(rename_all = "lowercase")]
 enum Operation {
     Amend,
-    //     Merge,
+    Merge,
     //     Reset { hard: bool },
     //     Rebase {interactive: bool, onto: String},
 }
@@ -55,6 +55,7 @@ impl FromLine for Ref {
         let re = Regex::new(REF_REGEX)?;
 
         let mut it = re.captures_iter(l.as_str());
+
         if let Some(caps) = it.next() {
             return Ok(Some(Ref {
                 from_hash: caps
@@ -124,7 +125,6 @@ impl Reflog {
         create_dir_all(&dropstitch_path)?;
 
         let dropstitch_file = Self::dropstitch_file(dropstitch_path.join(&branch))?;
-
         Ok(Self {
             refs: Self::parse_refs(&git_dir, &branch)?,
             action_log: Self::parse_actions(&dropstitch_file)?,
@@ -221,6 +221,8 @@ impl Reflog {
         let branch_output = run_command_with_output(&["branch"], Some(repo))?;
 
         let re = Regex::new(HEAD_REGEX).context("regex failed")?;
+
+        // ToDo: add test cases for unhappy paths here
         let mut it = re.captures_iter(branch_output.as_str());
         let caps = it.next().context("regex capture failed")?;
 

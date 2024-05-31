@@ -1,4 +1,4 @@
-baz
+foo
 
 # Please enter the commit message for your changes. Lines starting
 # with '#' will be ignored, and an empty message aborts the commit.
@@ -6,10 +6,11 @@ baz
 # Author:    Pauline Vos <pauline@usabilla.com>
 # Date:      Sat Aug 13 16:40:20 2016 +0200
 #
-# On branch amend-amend
+# On branch amend-merge
 # Changes to be committed:
 #	modified:   PokeMongo.php
+#	new file:   git
 #
-# Untracked files:
-#	git/
+# Changes not staged for commit:
+#	deleted:    git
 #

@@ -74,19 +74,26 @@ async fn main() {
 async fn amended_commit(w: &mut World) -> anyhow::Result<()> {
     let _ = w.run_command_with_output(&["checkout", "amend-amend"])?;
 
-    commit_message_is(w, "baz".to_string()).await
+    commit_message_matches(w, "baz".to_string()).await
 }
 
-#[when("they undo the last change")]
+#[given(expr = "the user merged a branch into the current branch")]
+async fn merged_branch(w: &mut World) -> anyhow::Result<()> {
+    let _ = w.run_command_with_output(&["checkout", "amend-merge"])?;
+    commit_message_matches(w, "Merge branch 'amend-amend' into amend-merge".to_string()).await
+}
+
+#[when(regex = r"^they undo the last change(?: again)?$")]
 async fn undo_last(w: &mut World) -> anyhow::Result<()> {
     Dropstitch::run(Cli::init(Command::Z, w.path.clone()))?;
     Ok(())
 }
 
 #[then(expr = "the latest commit message is {string}")]
-async fn commit_message_is(w: &mut World, msg: String) -> anyhow::Result<()> {
+async fn commit_message_matches(w: &mut World, msg: String) -> anyhow::Result<()> {
     let output = w.run_command_with_output(&["log", "--oneline"])?;
-    let re = Regex::new(format!("^[a-z0-9]* {}\n", msg).as_str())?;
+    let re = format!("^[a-z0-9]* (?:{})\n", regex::escape(msg.as_str()));
+    let re = Regex::new(re.as_str())?;
 
     assert!(
         re.is_match(output.as_str()),

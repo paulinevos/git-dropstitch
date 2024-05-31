@@ -1,0 +1,3 @@
+0000000000000000000000000000000000000000 5f9282de3b226da8052e5b873fe8dc51580c2f62 Pauline Vos <pv@daedalean.ai> 1717166240 +0200	branch: Created from HEAD
+5f9282de3b226da8052e5b873fe8dc51580c2f62 a8817f51df3a9d9413c86aa7458f3f255df6bc9a Pauline Vos <pv@daedalean.ai> 1717166266 +0200	commit (amend): foo
+a8817f51df3a9d9413c86aa7458f3f255df6bc9a 431ae3e7f8792ba5f5af5a06a371875c52475198 Pauline Vos <pv@daedalean.ai> 1717166321 +0200	merge amend-amend: Merge made by the 'ort' strategy.
